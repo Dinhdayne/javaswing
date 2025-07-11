@@ -1,6 +1,12 @@
 package controller;
 
 import model.UserSession;
+import dao.ClassDAO;
+import dao.CourseDAO;
+import model.Class;
+import model.Course;
+import java.sql.SQLException;
+import java.util.List;
 
 public class AuthorizationService {
     
@@ -60,6 +66,62 @@ public class AuthorizationService {
             default:
                 return false;
         }
+    }
+    
+    /**
+     * Check if teacher can manage student in specific class
+     */
+    public static boolean canTeacherManageStudentInClass(String classId) {
+        UserSession session = UserSession.getInstance();
+        if (!"Teacher".equals(session.getCurrentRole())) {
+            return false;
+        }
+        
+        try {
+            ClassDAO classDAO = new ClassDAO();
+            List<Class> teacherClasses = classDAO.getAllClasses().stream()
+                .filter(c -> c.getTeacherId().equals(session.getCurrentUserId()))
+                .toList();
+            
+            return teacherClasses.stream()
+                .anyMatch(c -> c.getClassId().equals(classId));
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+    
+    /**
+     * Check if teacher can manage grades for specific course
+     */
+    public static boolean canTeacherManageGradeForCourse(String courseId) {
+        UserSession session = UserSession.getInstance();
+        if (!"Teacher".equals(session.getCurrentRole())) {
+            return false;
+        }
+        
+        try {
+            CourseDAO courseDAO = new CourseDAO();
+            List<Course> teacherCourses = courseDAO.getAllCourses().stream()
+                .filter(c -> c.getTeacherId().equals(session.getCurrentUserId()))
+                .toList();
+            
+            return teacherCourses.stream()
+                .anyMatch(c -> c.getCourseId().equals(courseId));
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+    
+    /**
+     * Check if student can view their own data
+     */
+    public static boolean canStudentViewOwnData(String studentId) {
+        UserSession session = UserSession.getInstance();
+        if (!"Student".equals(session.getCurrentRole())) {
+            return false;
+        }
+        
+        return session.getCurrentUserId().equals(studentId);
     }
     
     private static boolean hasAdminPermission(Permission permission) {

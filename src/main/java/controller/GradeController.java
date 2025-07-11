@@ -173,12 +173,39 @@ public class GradeController {
         String searchText = view.getSearchText();
         try {
             List<Grade> grades = model.getAllGrades();
+            
+            // Apply role-based filtering first
+            String role = userSession.getCurrentRole();
+            String currentUserId = userSession.getCurrentUserId();
+            
+            if ("Student".equals(role)) {
+                // Students can only see their own grades
+                grades = grades.stream()
+                    .filter(g -> g.getStudentId().equals(currentUserId))
+                    .toList();
+            } else if ("Teacher".equals(role)) {
+                // Teachers can only see grades for courses they teach
+                List<Course> teacherCourses = courseDAO.getAllCourses().stream()
+                    .filter(c -> c.getTeacherId().equals(currentUserId))
+                    .toList();
+                
+                List<String> teacherCourseIds = teacherCourses.stream()
+                    .map(Course::getCourseId)
+                    .toList();
+                
+                grades = grades.stream()
+                    .filter(g -> teacherCourseIds.contains(g.getCourseId()))
+                    .toList();
+            }
+            
+            // Then apply search filter
             if (!searchText.isEmpty()) {
                 grades = grades.stream()
                     .filter(g -> g.getStudentId().toLowerCase().contains(searchText.toLowerCase()) ||
                                  g.getCourseId().toLowerCase().contains(searchText.toLowerCase()))
                     .toList();
             }
+            
             view.updateTable(grades);
         } catch (SQLException e) {
             view.showMessage("Error searching grades: " + e.getMessage());

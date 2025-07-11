@@ -180,12 +180,39 @@ public class StudentController {
         String searchText = view.getSearchText();
         try {
             List<Student> students = model.getAllStudents();
+            
+            // Apply role-based filtering first
+            String role = userSession.getCurrentRole();
+            String currentUserId = userSession.getCurrentUserId();
+            
+            if ("Student".equals(role)) {
+                // Students can only see their own information
+                students = students.stream()
+                    .filter(s -> s.getStudentId().equals(currentUserId))
+                    .toList();
+            } else if ("Teacher".equals(role)) {
+                // Teachers can only see students in their classes
+                List<Class> teacherClasses = classDAO.getAllClasses().stream()
+                    .filter(c -> c.getTeacherId().equals(currentUserId))
+                    .toList();
+                
+                List<String> teacherClassIds = teacherClasses.stream()
+                    .map(Class::getClassId)
+                    .toList();
+                
+                students = students.stream()
+                    .filter(s -> teacherClassIds.contains(s.getClassId()))
+                    .toList();
+            }
+            
+            // Then apply search filter
             if (!searchText.isEmpty()) {
                 students = students.stream()
                     .filter(s -> s.getName().toLowerCase().contains(searchText.toLowerCase()) ||
                                  s.getStudentId().toLowerCase().contains(searchText.toLowerCase()))
                     .toList();
             }
+            
             view.updateTable(students);
         } catch (SQLException e) {
             view.showMessage("Error searching students: " + e.getMessage());
