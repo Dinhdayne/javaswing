@@ -165,4 +165,21 @@ public class GradeView extends JPanel {
     public void showMessage(String message) {
         JOptionPane.showMessageDialog(this, message);
     }
+    
+    // Methods to enable/disable buttons based on user permissions
+    public void setAddButtonEnabled(boolean enabled) {
+        addButton.setEnabled(enabled);
+    }
+    
+    public void setUpdateButtonEnabled(boolean enabled) {
+        updateButton.setEnabled(enabled);
+    }
+    
+    public void setDeleteButtonEnabled(boolean enabled) {
+        deleteButton.setEnabled(enabled);
+    }
+    
+    public void setSearchButtonEnabled(boolean enabled) {
+        searchButton.setEnabled(enabled);
+    }
 }
