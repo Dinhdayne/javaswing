@@ -30,6 +30,35 @@ public class PersonalInfoController {
         loadPersonalInfo();
     }
 
+    // Helper methods to translate gender values between Vietnamese (UI) and English (Database)
+    private String translateGenderToEnglish(String vietnameseGender) {
+        if (vietnameseGender == null) return null;
+        switch (vietnameseGender) {
+            case "Nam":
+                return "Male";
+            case "Nữ":
+                return "Female";
+            case "Khác":
+                return "Other";
+            default:
+                return vietnameseGender; // Return as-is if not recognized
+        }
+    }
+    
+    private String translateGenderToVietnamese(String englishGender) {
+        if (englishGender == null) return null;
+        switch (englishGender) {
+            case "Male":
+                return "Nam";
+            case "Female":
+                return "Nữ";
+            case "Other":
+                return "Khác";
+            default:
+                return englishGender; // Return as-is if not recognized
+        }
+    }
+
     private void initializeEventListeners() {
         view.setUpdateInfoButtonListener(e -> updatePersonalInfo());
         view.setChangePasswordButtonListener(e -> changePassword());
@@ -77,7 +106,8 @@ public class PersonalInfoController {
             view.setPhone(student.getPhone());
             view.setAddress(student.getAddress());
             view.setDateOfBirth(student.getDateOfBirth());
-            view.setGender(student.getGender());
+            // Translate gender from English (database) to Vietnamese (UI)
+            view.setGender(translateGenderToVietnamese(student.getGender()));
         }
     }
 
@@ -89,7 +119,8 @@ public class PersonalInfoController {
             view.setPhone(teacher.getPhone());
             view.setAddress(teacher.getAddress());
             view.setDateOfBirth(teacher.getDateOfBirth());
-            view.setGender(teacher.getGender());
+            // Translate gender from English (database) to Vietnamese (UI)
+            view.setGender(translateGenderToVietnamese(teacher.getGender()));
         }
     }
 
@@ -123,7 +154,8 @@ public class PersonalInfoController {
             studentId,
             view.getName(),
             view.getDateOfBirth(),
-            view.getGender(),
+            // Translate gender from Vietnamese (UI) to English (database)
+            translateGenderToEnglish(view.getGender()),
             view.getEmail(),
             view.getPhone(),
             view.getAddress(),
@@ -146,7 +178,8 @@ public class PersonalInfoController {
             teacherId,
             view.getName(),
             view.getDateOfBirth(),
-            view.getGender(),
+            // Translate gender from Vietnamese (UI) to English (database)
+            translateGenderToEnglish(view.getGender()),
             view.getEmail(),
             view.getPhone(),
             view.getAddress(),
