@@ -147,12 +147,35 @@ public class ClassController {
         String searchText = view.getSearchText();
         try {
             List<Class> classes = model.getAllClasses();
+            
+            // Apply role-based filtering first
+            String role = userSession.getCurrentRole();
+            String currentUserId = userSession.getCurrentUserId();
+            
+            if ("Student".equals(role)) {
+                // Students can only see their own class
+                Student student = studentDAO.getStudentById(currentUserId);
+                if (student != null) {
+                    String studentClassId = student.getClassId();
+                    classes = classes.stream()
+                        .filter(c -> c.getClassId().equals(studentClassId))
+                        .toList();
+                }
+            } else if ("Teacher".equals(role)) {
+                // Teachers can see classes they teach
+                classes = classes.stream()
+                    .filter(c -> c.getTeacherId().equals(currentUserId))
+                    .toList();
+            }
+            
+            // Then apply search filter
             if (!searchText.isEmpty()) {
                 classes = classes.stream()
                     .filter(c -> c.getClassName().toLowerCase().contains(searchText.toLowerCase()) ||
                                  c.getClassId().toLowerCase().contains(searchText.toLowerCase()))
                     .toList();
             }
+            
             view.updateTable(classes);
         } catch (SQLException e) {
             view.showMessage("Error searching classes: " + e.getMessage());
