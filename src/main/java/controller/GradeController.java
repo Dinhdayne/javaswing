@@ -2,8 +2,10 @@ package controller;
 
 import dao.GradeDAO;
 import dao.CourseDAO;
+import dao.StudentDAO;
 import model.Grade;
 import model.Course;
+import model.Student;
 import model.UserSession;
 import view.GradeView;
 
@@ -15,12 +17,14 @@ public class GradeController {
     private GradeView view;
     private GradeDAO model;
     private CourseDAO courseDAO;
+    private StudentDAO studentDAO;
     private UserSession userSession;
 
     public GradeController(GradeView view, GradeDAO model) {
         this.view = view;
         this.model = model;
         this.courseDAO = new CourseDAO();
+        this.studentDAO = new StudentDAO();
         this.userSession = UserSession.getInstance();
 
         loadGrades();
@@ -55,11 +59,32 @@ public class GradeController {
             String role = userSession.getCurrentRole();
             String currentUserId = userSession.getCurrentUserId();
             
+            // DEBUG: Add logging to identify the issue
+            System.out.println("=== DEBUG GRADE LOADING ===");
+            System.out.println("Current User ID: " + currentUserId);
+            System.out.println("Current Role: " + role);
+            System.out.println("Total grades before filtering: " + grades.size());
+            
             if ("Student".equals(role)) {
-                // Students can only see their own grades
-                grades = grades.stream()
-                    .filter(g -> g.getStudentId().equals(currentUserId))
-                    .toList();
+                // FIX: For students, we need to find their studentId first
+                String studentId = getStudentIdFromUserId(currentUserId);
+                System.out.println("Student ID mapped from User ID: " + studentId);
+                
+                if (studentId != null) {
+                    // Students can only see their own grades
+                    grades = grades.stream()
+                        .filter(g -> {
+                            boolean matches = g.getStudentId().equals(studentId);
+                            System.out.println("Grade " + g.getGradeId() + " - Student ID: " + g.getStudentId() + 
+                                             " matches " + studentId + ": " + matches);
+                            return matches;
+                        })
+                        .toList();
+                } else {
+                    // If we can't find the student ID, show no grades for security
+                    grades = List.of();
+                    System.out.println("WARNING: Could not find studentId for userId: " + currentUserId);
+                }
             } else if ("Teacher".equals(role)) {
                 // Teachers can only see grades for courses they teach
                 List<Course> teacherCourses = courseDAO.getAllCourses().stream()
@@ -76,9 +101,52 @@ public class GradeController {
             }
             // Admin sees all grades (no filtering)
             
+            System.out.println("Total grades after filtering: " + grades.size());
+            System.out.println("=== END DEBUG ===");
+            
             view.updateTable(grades);
         } catch (SQLException e) {
             view.showMessage("Error loading grades: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * FIX: New method to map Account.userId to Student.studentId
+     * This is the key fix for the security vulnerability
+     */
+    private String getStudentIdFromUserId(String userId) {
+        try {
+            // Get all students and find the one whose studentId matches the userId
+            // This assumes that for student accounts, Account.userId should match Student.studentId
+            List<Student> students = studentDAO.getAllStudents();
+            
+            // First try direct match (if userId == studentId)
+            for (Student student : students) {
+                if (student.getStudentId().equals(userId)) {
+                    return student.getStudentId();
+                }
+            }
+            
+            // If no direct match, try alternative mappings
+            // This might be needed if the Account.userId format is different from Student.studentId
+            // For example: userId might be "student001" while studentId is "ST001"
+            
+            // Try to extract numeric part and map to student format
+            if (userId.startsWith("student")) {
+                String numericPart = userId.substring(7); // Remove "student" prefix
+                String studentIdPattern = "ST" + String.format("%03d", Integer.parseInt(numericPart));
+                
+                for (Student student : students) {
+                    if (student.getStudentId().equals(studentIdPattern)) {
+                        return student.getStudentId();
+                    }
+                }
+            }
+            
+            return null; // No matching student found
+        } catch (SQLException e) {
+            System.err.println("Error getting student ID from user ID: " + e.getMessage());
+            return null;
         }
     }
 
@@ -179,10 +247,15 @@ public class GradeController {
             String currentUserId = userSession.getCurrentUserId();
             
             if ("Student".equals(role)) {
-                // Students can only see their own grades
-                grades = grades.stream()
-                    .filter(g -> g.getStudentId().equals(currentUserId))
-                    .toList();
+                // FIX: Use the same mapping logic for search
+                String studentId = getStudentIdFromUserId(currentUserId);
+                if (studentId != null) {
+                    grades = grades.stream()
+                        .filter(g -> g.getStudentId().equals(studentId))
+                        .toList();
+                } else {
+                    grades = List.of();
+                }
             } else if ("Teacher".equals(role)) {
                 // Teachers can only see grades for courses they teach
                 List<Course> teacherCourses = courseDAO.getAllCourses().stream()
