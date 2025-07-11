@@ -26,20 +26,23 @@ Hệ thống quản lý sinh viên đã được nâng cấp với một hệ th
 - **Quyền hạn chế**: Truy cập các chức năng liên quan đến giảng dạy
 - **Có thể**:
   - Xem thông tin giáo viên
-  - Xem thông tin sinh viên (tất cả sinh viên)
-  - Xem và quản lý lớp học
-  - Xem và quản lý môn học
-  - Xem và quản lý điểm số
+  - Xem và quản lý sinh viên trong lớp học của mình
+  - Xem lớp học của mình
+  - Xem và quản lý môn học mà mình dạy
+  - Xem và quản lý điểm số cho môn học mà mình dạy
   - Xem và chỉnh sửa thông tin cá nhân
   - Đổi mật khẩu
 - **Không thể**:
   - Quản lý phòng ban
-  - Thêm/xóa sinh viên
+  - Xem/quản lý sinh viên ngoài lớp của mình
+  - Quản lý môn học của giáo viên khác
+  - Quản lý điểm số của môn học không phải mình dạy
 
 ### 3. Student (Sinh viên)
 - **Quyền hạn chế nhất**: Chỉ truy cập thông tin cá nhân
 - **Có thể**:
-  - Xem môn học
+  - Xem lớp học của mình
+  - Xem môn học mà mình đăng ký (có điểm)
   - Xem điểm số cá nhân
   - Xem và chỉnh sửa thông tin cá nhân
   - Đổi mật khẩu
@@ -48,6 +51,8 @@ Hệ thống quản lý sinh viên đã được nâng cấp với một hệ th
   - Xem thông tin giáo viên
   - Xem thông tin sinh viên khác
   - Quản lý lớp học
+  - Quản lý môn học
+  - Quản lý điểm số
 
 ## Tính năng Quản lý Thông tin Cá nhân
 
@@ -84,6 +89,7 @@ Mỗi người dùng có thể truy cập tab "Thông tin cá nhân" để:
 - Kiểm tra quyền hạn dựa trên vai trò
 - Cấu hình UI động theo quyền hạn
 - Enum Permission để định nghĩa các quyền
+- **Quyền mới**: MANAGE_STUDENTS_IN_OWN_CLASS, VIEW_OWN_CLASS, VIEW_OWN_COURSES, MANAGE_OWN_COURSES, MANAGE_GRADES_FOR_OWN_COURSES
 
 ### 3. PersonalInfoView
 - Giao diện quản lý thông tin cá nhân
@@ -94,6 +100,12 @@ Mỗi người dùng có thể truy cập tab "Thông tin cá nhân" để:
 - Xử lý logic quản lý thông tin cá nhân
 - Tích hợp với StudentDAO và TeacherDAO
 - Kiểm tra quyền hạn trước khi thực hiện thao tác
+
+### 5. Các Controller với Phân quyền Nâng cao
+- **StudentController**: Teacher chỉ quản lý sinh viên trong lớp của mình
+- **ClassController**: Student xem lớp của mình, Teacher xem lớp mình dạy
+- **CourseController**: Student xem môn đã đăng ký, Teacher xem môn mình dạy
+- **GradeController**: Student xem điểm của mình, Teacher quản lý điểm môn mình dạy
 
 ## Tính năng Bảo mật
 
@@ -108,9 +120,13 @@ Mỗi người dùng có thể truy cập tab "Thông tin cá nhân" để:
 - Xác nhận mật khẩu trước khi thay đổi
 
 ### 3. Lọc dữ liệu
-- Sinh viên chỉ thấy thông tin cá nhân của mình
-- Giáo viên thấy tất cả sinh viên nhưng không thể xóa
-- Admin có quyền truy cập đầy đủ
+- **Sinh viên**: Chỉ thấy lớp, môn học và điểm số của mình
+- **Giáo viên**: 
+  - Chỉ thấy sinh viên trong lớp mình dạy
+  - Chỉ thấy lớp học mình phụ trách
+  - Chỉ thấy môn học mình giảng dạy
+  - Chỉ quản lý điểm số của môn học mình dạy
+- **Admin**: Có quyền truy cập đầy đủ tất cả dữ liệu
 
 ## Cách sử dụng
 
@@ -145,6 +161,34 @@ Mỗi người dùng có thể truy cập tab "Thông tin cá nhân" để:
 - Kiến trúc modular
 - Separation of concerns
 - Extensible design
+
+## Cập nhật Phân quyền Chi tiết
+
+### Thay đổi chính trong hệ thống:
+
+#### 1. Sinh viên (Student)
+- **Lớp học**: Chỉ xem được lớp của mình (dựa trên classId trong thông tin sinh viên)
+- **Môn học**: Chỉ xem được môn học mà mình đã đăng ký (có điểm số)
+- **Điểm số**: Chỉ xem được điểm số của chính mình
+- **Không thể**: Thực hiện bất kỳ thao tác thêm/sửa/xóa nào
+
+#### 2. Giáo viên (Teacher) 
+- **Sinh viên**: Chỉ quản lý sinh viên trong các lớp mà mình phụ trách (teacherId trong Class)
+- **Lớp học**: Chỉ xem các lớp mà mình phụ trách
+- **Môn học**: Chỉ quản lý các môn học mà mình giảng dạy (teacherId trong Course)
+- **Điểm số**: Chỉ thêm/sửa/xóa điểm của các môn học mà mình dạy
+
+#### 3. Logic kiểm tra quyền hạn
+- Mỗi thao tác đều được kiểm tra quyền hạn thông qua AuthorizationService
+- Dữ liệu được filter theo userId hiện tại trước khi hiển thị
+- Các thao tác thêm/sửa/xóa có kiểm tra bổ sung để đảm bảo chỉ tác động đến dữ liệu thuộc quyền
+
+### Cơ chế hoạt động:
+
+1. **Load dữ liệu**: Filter theo role và userId
+2. **Thao tác**: Kiểm tra permission và ownership
+3. **UI**: Disable các button không có quyền
+4. **Validation**: Double-check trước khi thực hiện thao tác
 
 ## Mở rộng tương lai
 

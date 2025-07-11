@@ -75,4 +75,28 @@ public class GradeDAO {
             pstmt.executeUpdate();
         }
     }
+    
+    public Grade getGradeById(int gradeId) throws SQLException {
+        String query = "SELECT * FROM Grades WHERE grade_id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setInt(1, gradeId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return new Grade(
+                        rs.getInt("grade_id"),
+                        rs.getString("student_id"),
+                        rs.getString("course_id"),
+                        rs.getString("semester"),
+                        rs.getDouble("midterm_grade"),
+                        rs.getDouble("final_grade"),
+                        rs.getDouble("overall_grade"),
+                        rs.getString("status"),
+                        rs.getString("notes")
+                    );
+                }
+            }
+        }
+        return null;
+    }
 }

@@ -17,19 +17,24 @@ public class AuthorizationService {
         VIEW_ALL_STUDENTS,
         MANAGE_STUDENTS,
         VIEW_OWN_STUDENT_INFO,
+        MANAGE_STUDENTS_IN_OWN_CLASS, // Teacher quản lý sinh viên trong lớp của mình
         
         // Class permissions
         VIEW_CLASSES,
+        VIEW_OWN_CLASS, // Sinh viên xem lớp của mình
         MANAGE_CLASSES,
         
         // Course permissions
         VIEW_COURSES,
+        VIEW_OWN_COURSES, // Sinh viên xem môn học của mình
         MANAGE_COURSES,
+        MANAGE_OWN_COURSES, // Teacher quản lý môn học của mình
         
         // Grade permissions
         VIEW_ALL_GRADES,
         MANAGE_GRADES,
         VIEW_OWN_GRADES,
+        MANAGE_GRADES_FOR_OWN_COURSES, // Teacher quản lý điểm môn học của mình
         
         // Personal information
         VIEW_OWN_PROFILE,
@@ -65,14 +70,14 @@ public class AuthorizationService {
     
     private static boolean hasTeacherPermission(Permission permission) {
         switch (permission) {
-            case VIEW_DEPARTMENTS:
             case VIEW_TEACHERS:
             case VIEW_ALL_STUDENTS:
+            case MANAGE_STUDENTS_IN_OWN_CLASS:
             case VIEW_CLASSES:
             case VIEW_COURSES:
-            case MANAGE_COURSES:
+            case MANAGE_OWN_COURSES:
             case VIEW_ALL_GRADES:
-            case MANAGE_GRADES:
+            case MANAGE_GRADES_FOR_OWN_COURSES:
             case VIEW_OWN_PROFILE:
             case EDIT_OWN_PROFILE:
             case CHANGE_PASSWORD:
@@ -85,8 +90,9 @@ public class AuthorizationService {
     private static boolean hasStudentPermission(Permission permission) {
         switch (permission) {
             case VIEW_OWN_STUDENT_INFO:
+            case VIEW_OWN_CLASS:
+            case VIEW_OWN_COURSES:
             case VIEW_OWN_GRADES:
-            case VIEW_COURSES:
             case VIEW_OWN_PROFILE:
             case EDIT_OWN_PROFILE:
             case CHANGE_PASSWORD:
@@ -126,8 +132,9 @@ public class AuthorizationService {
                 break;
                 
             case "Student":
-                // Student can access: Courses (view only), Grades (own grades only), Personal Info
-                tabbedPane.setEnabledAt(4, true); // Courses (view only)
+                // Student can access: Classes (own class only), Courses (own courses only), Grades (own grades only), Personal Info
+                tabbedPane.setEnabledAt(3, true); // Classes (own class only)
+                tabbedPane.setEnabledAt(4, true); // Courses (own courses only)
                 tabbedPane.setEnabledAt(5, true); // Grades (own grades only)
                 tabbedPane.setEnabledAt(6, true); // Personal Info
                 break;
