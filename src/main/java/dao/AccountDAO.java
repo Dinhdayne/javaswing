@@ -40,4 +40,28 @@ public class AccountDAO {
     }
 }
     
+    public boolean updatePassword(String username, String newPassword) throws SQLException {
+        String query = "UPDATE accounts SET password = ? WHERE username = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, newPassword);
+            pstmt.setString(2, username);
+            return pstmt.executeUpdate() > 0;
+        }
+    }
+    
+    public boolean verifyCurrentPassword(String username, String currentPassword) throws SQLException {
+        String query = "SELECT password FROM accounts WHERE username = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, username);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getString("password").equals(currentPassword);
+            }
+            return false;
+        }
+    }
+    
 }

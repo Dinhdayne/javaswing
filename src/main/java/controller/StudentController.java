@@ -2,6 +2,7 @@ package controller;
 
 import dao.StudentDAO;
 import model.Student;
+import model.UserSession;
 import view.StudentView;
 
 import java.awt.event.*;
@@ -12,21 +13,56 @@ import java.util.regex.Pattern;
 public class StudentController {
     private StudentView view;
     private StudentDAO model;
+    private UserSession userSession;
 
     public StudentController(StudentView view, StudentDAO model) {
         this.view = view;
         this.model = model;
+        this.userSession = UserSession.getInstance();
 
         loadStudents();
+        setupEventListeners();
+        configureUIForRole();
+    }
+    
+    private void setupEventListeners() {
         view.setAddButtonListener(e -> addStudent());
         view.setUpdateButtonListener(e -> updateStudent());
         view.setDeleteButtonListener(e -> deleteStudent());
         view.setSearchButtonListener(e -> searchStudent());
     }
+    
+    private void configureUIForRole() {
+        // Configure UI elements based on user role
+        String role = userSession.getCurrentRole();
+        
+        if ("Student".equals(role)) {
+            // Students can only view their own information
+            view.setAddButtonEnabled(false);
+            view.setUpdateButtonEnabled(false);
+            view.setDeleteButtonEnabled(false);
+        } else if ("Teacher".equals(role)) {
+            // Teachers can view all students but may have limited editing capabilities
+            view.setAddButtonEnabled(false);
+            view.setDeleteButtonEnabled(false);
+        }
+        // Admin has full access (default)
+    }
 
     private void loadStudents() {
         try {
             List<Student> students = model.getAllStudents();
+            
+            // Filter students based on user role
+            String role = userSession.getCurrentRole();
+            if ("Student".equals(role)) {
+                // Students can only see their own information
+                String currentUserId = userSession.getCurrentUserId();
+                students = students.stream()
+                    .filter(s -> s.getStudentId().equals(currentUserId))
+                    .toList();
+            }
+            
             view.updateTable(students);
         } catch (SQLException e) {
             view.showMessage("Error loading students: " + e.getMessage());
@@ -34,6 +70,10 @@ public class StudentController {
     }
 
     private void addStudent() {
+        if (!AuthorizationService.hasPermission(AuthorizationService.Permission.MANAGE_STUDENTS)) {
+            view.showMessage("Bạn không có quyền thêm sinh viên!");
+            return;
+        }
         if (!validateFields()) return;
         try {
             Student student = view.getStudentFromFields();
@@ -47,6 +87,10 @@ public class StudentController {
     }
 
     private void updateStudent() {
+        if (!AuthorizationService.hasPermission(AuthorizationService.Permission.MANAGE_STUDENTS)) {
+            view.showMessage("Bạn không có quyền cập nhật thông tin sinh viên!");
+            return;
+        }
         if (!validateFields()) return;
         try {
             Student student = view.getStudentFromFields();
@@ -60,6 +104,10 @@ public class StudentController {
     }
 
     private void deleteStudent() {
+        if (!AuthorizationService.hasPermission(AuthorizationService.Permission.MANAGE_STUDENTS)) {
+            view.showMessage("Bạn không có quyền xóa sinh viên!");
+            return;
+        }
         String studentId = view.getSelectedStudentId();
         if (studentId != null) {
             try {

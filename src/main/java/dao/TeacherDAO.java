@@ -76,4 +76,28 @@ public class TeacherDAO {
             pstmt.executeUpdate();
         }
     }
+
+    public Teacher getTeacherById(String teacherId) throws SQLException {
+        String query = "SELECT * FROM Teachers WHERE teacher_id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, teacherId);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return new Teacher(
+                    rs.getString("teacher_id"),
+                    rs.getString("name"),
+                    rs.getString("date_of_birth"),
+                    rs.getString("gender"),
+                    rs.getString("email"),
+                    rs.getString("phone"),
+                    rs.getString("address"),
+                    rs.getString("department_id"),
+                    rs.getString("hire_date")
+                );
+            }
+            return null;
+        }
+    }
 }

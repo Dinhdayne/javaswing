@@ -75,4 +75,28 @@ public class StudentDAO {
             pstmt.executeUpdate();
         }
     }
+
+    public Student getStudentById(String studentId) throws SQLException {
+        String query = "SELECT * FROM Students WHERE student_id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, studentId);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return new Student(
+                    rs.getString("student_id"),
+                    rs.getString("name"),
+                    rs.getString("date_of_birth"),
+                    rs.getString("gender"),
+                    rs.getString("email"),
+                    rs.getString("phone"),
+                    rs.getString("address"),
+                    rs.getString("class_id"),
+                    rs.getString("enrollment_date")
+                );
+            }
+            return null;
+        }
+    }
 }
